@@ -23,12 +23,13 @@ Everything here is MIT licensed — see [LICENSE](LICENSE) — but read
 
 | Skill | What it does |
 | --- | --- |
-| [`commit`](skills/commit/) | Conventional Commit + Keep a Changelog entry + push. Optionally cuts a release with `as patch\|minor\|major\|X.Y.Z`. |
-| [`commit-and-tag`](skills/commit-and-tag/) | Same, but always cuts a release: bumps the version, folds `[Unreleased]` into a release section, tags, pushes. |
+| [`commit`](skills/commit/) | Conventional Commit + Keep a Changelog entry, committed locally and never pushed. Optionally cuts a release with `as patch\|minor\|major\|X.Y.Z`. |
+| [`commit-tag-push`](skills/commit-tag-push/) | The release verb: bumps the version, folds `[Unreleased]` into a release section, tags, and pushes the tag with every commit waiting on the branch. |
 
 Both detect the project type (Cargo / npm / pyproject / none) and the versioning scheme
-(SemVer or date-based) instead of assuming one, and both refuse to put AI attribution in
-your commit messages.
+(SemVer, or date-based as `YYYY-MM-DD` or `YYYYMMDD`) instead of assuming one, and both
+refuse to put AI attribution in your commit messages. Only `commit-tag-push` touches the
+remote.
 
 ### [`output-styles/`](output-styles/) — Claude Code output styles
 

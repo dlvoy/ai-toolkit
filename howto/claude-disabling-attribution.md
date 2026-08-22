@@ -59,7 +59,7 @@ customize the text or reach the session URL. Use `attribution` in new configurat
 
 Settings govern the commits Claude Code composes on its own. Skills that write commit
 messages can also forbid attribution at the prompt level — the
-[`commit`](../skills/commit/) and [`commit-and-tag`](../skills/commit-and-tag/) skills in
+[`commit`](../skills/commit/) and [`commit-tag-push`](../skills/commit-tag-push/) skills in
 this repo both do, and both re-read the message with `git log -1` afterwards to check.
 That works regardless of what `settings.json` says, which is useful on a machine whose
 configuration you do not control.

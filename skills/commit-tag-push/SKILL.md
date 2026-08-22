@@ -1,8 +1,8 @@
 ---
-description: Commit using Conventional Commits, bump the project version (explicit X.Y.Z, a patch|minor|major keyword, or auto-detected from commit types), cut a Keep a Changelog release, tag it, and push. Use only when explicitly invoked.
+description: Commit using Conventional Commits, bump the project version (explicit X.Y.Z, a patch|minor|major keyword, or auto-detected from commit types), cut a Keep a Changelog release, tag it, then push every pending commit and the tag. Use only when explicitly invoked.
 disable-model-invocation: true
 argument-hint: <X.Y.Z|patch|minor|major> [ticket id or note]
-allowed-tools: Bash(git add *) Bash(git status *) Bash(git diff *) Bash(git commit *) Bash(git push *) Bash(git branch *) Bash(git rev-parse *) Bash(git log *) Bash(git tag *) Bash(git describe *) Bash(git remote *) Bash(npm version *) Bash(node -p *) Bash(cargo update *) Read Edit Write
+allowed-tools: Bash(git add *) Bash(git status *) Bash(git diff *) Bash(git commit *) Bash(git push *) Bash(git branch *) Bash(git rev-parse *) Bash(git rev-list *) Bash(git log *) Bash(git tag *) Bash(git describe *) Bash(git remote *) Bash(npm version *) Bash(node -p *) Bash(cargo update *) Read Edit Write
 ---
 
 ## Current state
@@ -17,6 +17,16 @@ git diff HEAD --stat
 Today: !`date +%Y-%m-%d` (compact: !`date +%Y%m%d`)
 
 Latest tag: !`git describe --tags --abbrev=0 2>/dev/null || echo "none yet"`
+
+Unpushed commits already on this branch:
+
+```!
+if git rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1; then
+  git log --oneline '@{upstream}..HEAD' | grep . || echo "none - branch is level with upstream"
+else
+  echo "no upstream configured for this branch"
+fi
+```
 
 Project manifest and current version:
 
@@ -49,6 +59,19 @@ Diff:
 Top of changelog:
 
 !`head -40 CHANGELOG.md 2>/dev/null || echo "NO CHANGELOG.md AT REPO ROOT"`
+
+Existing changelog release headers (the versioning scheme this repo actually uses):
+
+```!
+grep -m5 -E '^## ' CHANGELOG.md 2>/dev/null | grep -viE 'unreleased' || echo "none yet"
+```
+
+## What this skill ships
+
+The release verb. It writes one more commit, cuts the release, tags it, and then pushes —
+**both the commits and the tag**. The push carries every unpushed commit on the branch, not
+just the one written here: `/commit` deliberately never pushes, so a run of local commits can
+have accumulated behind this one. They all go out together.
 
 ## Attribution — hard rule
 
@@ -90,31 +113,37 @@ This applies to the changelog entry too: it describes the change, never who or w
 
 ## Versioning scheme — detect, never assume
 
-Determine the scheme from the **latest tag** shown in the dynamic context above:
+Read the signals in this order and stop at the first that answers:
 
-| Latest tag looks like | Scheme |
+1. **The latest tag**, from the dynamic context above.
+2. **The existing changelog release headers**, if there are no tags. A repo can date its
+   changelog sections without ever tagging — that is a complete scheme on its own.
+3. **Neither** — default to SemVer.
+
+| Signal looks like | Scheme |
 | --- | --- |
-| `v1.2.3` or `1.2.3` | [SemVer](https://semver.org/) |
-| `20260815` (exactly 8 digits) | Date-based `YYYYMMDD` |
-| No tags at all | SemVer |
+| `v1.2.3`, `1.2.3` | [SemVer](https://semver.org/) |
+| `2026-08-23` | Date-based, dashed `YYYY-MM-DD` |
+| `20260815` | Date-based, compact `YYYYMMDD` |
+| nothing | SemVer |
 
-Under the date-based scheme the version *is* today's date, so the whole "Version argument"
-section below collapses to one rule: the target version is today in `YYYYMMDD` form. An
-explicit `X.Y.Z`, a bump keyword, and auto-detection all become meaningless — if the user
-passed one, say so in the final report rather than silently ignoring it. The tag-collision
-refusal below still applies, and is what stops a second release on the same day.
+Under either date-based scheme the whole "Version argument" section below collapses to one
+rule: the target version is today's date in the detected form. An explicit `X.Y.Z`, a bump
+keyword, and auto-detection all become meaningless — if the user passed one, say so in the
+final report rather than silently ignoring it. The collision refusal below still applies, and
+is what stops a second release on the same day.
 
 Tags are written `v<version>` when the existing tags carry a `v` prefix, and bare otherwise.
-Match what the repo already does; if there are no tags, use `v`.
+Match what the repo already does; with no tags, use `v` for SemVer and no prefix for a date.
 
 **Writing the version** depends on the manifest reported above:
 
 | Manifest | How to set the version |
 | --- | --- |
-| `package.json` | `npm version <X.Y.Z> --no-git-tag-version` — rewrites `package.json` and `package-lock.json`, no commit, no tag. Stage both. |
+| `package.json` | `npm version <X.Y.Z> --no-git-tag-version` — rewrites `package.json` and `package-lock.json`, no commit, no tag. Stage both. A date version is not valid SemVer, so under a date-based scheme edit the field directly instead. |
 | `Cargo.toml` | Edit the `version` field under `[package]`, or under `[workspace.package]` in a workspace — the dynamic context shows which lines exist. Refresh the lockfile with `cargo update --workspace --offline`. Stage `Cargo.toml` and `Cargo.lock`. |
 | `pyproject.toml` | Edit `version` under `[project]`, or under `[tool.poetry]` in a Poetry project. If a `uv.lock` or `poetry.lock` records the project version, refresh it with the corresponding tool. Stage what changed. |
-| none | Nothing to write — the tag is the only record of the version. |
+| none | Nothing to write — the tag, or the changelog header, is the only record of the version. |
 
 ## Changelog — Keep a Changelog 1.1.0
 
@@ -133,8 +162,17 @@ Match what the repo already does; if there are no tags, use `v`.
 [1.6.2]: https://github.com/<owner>/<repo>/compare/v1.6.1...v1.6.2
 ```
 
-Under the date-based scheme the header is `## [20260815]` with no separate date appended —
-the version already carries it.
+Release headers carry the version and, under SemVer only, the release date:
+
+| Scheme | Header |
+| --- | --- |
+| SemVer | `## [1.7.0] - 2026-08-23` |
+| Date-based, dashed | `## [2026-08-23]` |
+| Date-based, compact | `## [20260815]` |
+
+A date-based version already carries its own date, so no separate date is appended. **Match the
+existing file** where it differs — notably the brackets, which some repos drop when they keep no
+reference-style compare links; use brackets only for a new file.
 
 Groups appear in this order and only when non-empty:
 
@@ -162,14 +200,16 @@ Unlike plain `/commit` (which only ever adds to `[Unreleased]`), **this skill al
 release**: after adding this change's own entry to `[Unreleased]`, it folds the *entire*
 `[Unreleased]` section — including any entries left there by earlier plain `/commit` runs, not
 just this one — into a new release header, and leaves a fresh empty `## [Unreleased]` above it.
-If the reference-style compare links block exists at the bottom of the file (see format above),
-update it too: repoint the `[Unreleased]:` link at the new tag, and insert a new `[<version>]:`
-link comparing it against the previous tag. Read the repo URL from `git remote get-url origin`
-(strip a trailing `.git`) rather than assuming one; if there is no remote, skip the links block.
+If there is no `[Unreleased]` section at all, add this change's entry directly under a new
+release header. If the reference-style compare links block exists at the bottom of the file
+(see format above), update it too: repoint the `[Unreleased]:` link at the new tag, and insert
+a new `[<version>]:` link comparing it against the previous tag. Read the repo URL from
+`git remote get-url origin` (strip a trailing `.git`) rather than assuming one; if there is no
+remote, skip the links block.
 
 ## Version argument
 
-Under the date-based scheme, skip this section — the target version is today's date.
+Under a date-based scheme, skip this section — the target version is today's date.
 
 `$ARGUMENTS`' first whitespace-separated token is the version directive; everything after it is
 free-text context (a ticket id or note), same as plain `/commit`. Resolve the target version
@@ -197,11 +237,12 @@ free-text context (a ticket id or note), same as plain `/commit`. Resolve the ta
    - No commits since the last tag and the new commit is the only change: base the decision on
      that one commit's type using the same rule.
 
-**Refuse early if the resulting tag already exists** (`git rev-parse "<tag>"` resolves) — stop
-and tell the user instead of silently doing nothing or overwriting it. Do this before staging or
-writing anything at all, which means: for bump-keyword and auto-detect modes, you must compute
-the concrete `X.Y.Z` (step 2's arithmetic, or step 3's arithmetic after deciding the bump size)
-before this check, not defer it to when the version is written.
+**Refuse early if the resulting version already exists** — the tag resolves
+(`git rev-parse "<tag>"`), or, in a repo with no tags, a changelog section already carries it.
+Stop and tell the user instead of silently doing nothing or overwriting it. Do this before
+staging or writing anything at all, which means: for bump-keyword and auto-detect modes, you
+must compute the concrete `X.Y.Z` (step 2's arithmetic, or step 3's arithmetic after deciding
+the bump size) before this check, not defer it to when the version is written.
 
 ## Steps
 
@@ -210,7 +251,7 @@ before this check, not defer it to when the version is written.
 2. Decide the commit's type, scope, and whether it's breaking, from the diff. In auto-detect
    mode this type feeds into the version resolution above.
 3. Resolve the target version per "Versioning scheme" and "Version argument" above, including
-   the early tag-collision refusal, before staging or writing anything.
+   the early collision refusal, before staging or writing anything.
 4. Stage the relevant files with `git add`. Never stage `.env`, secrets, or build artifacts.
 5. Write the version using the command for this project's manifest, per the table above, and
    stage every file it touched. Skip this step entirely when there is no manifest.
@@ -236,12 +277,16 @@ before this check, not defer it to when the version is written.
 8. Run `git log -1 --pretty=%B` and read the result. If any attribution trailer or generated-by
    line appears, remove it with `git commit --amend` before continuing.
 9. Tag the commit: `git tag "<tag>"`.
-10. Push with `git push`, or `git push -u origin <branch>` if the branch has no upstream. Then
-    push the tag: `git push origin "<tag>"`.
-11. Report: the commit hash, the subject line, the changelog changes (entry added and the
+10. Push the commits: `git push`, or `git push -u origin <branch>` if the branch has no
+    upstream. This carries every unpushed commit on the branch, including any left behind by
+    earlier `/commit` runs — the dynamic context above listed them.
+11. Push the tag: `git push origin "<tag>"`. Do this as its own command rather than relying on
+    `--follow-tags`, so a failure here is visible instead of silent.
+12. Report: the commit hash, the subject line, the changelog changes (entry added and the
     release section cut), the resolved version and how it was resolved (explicit / bump keyword
-    / auto-detected — and from which commit types, if auto-detected / date-based), and the tag
-    that was pushed. If a breaking-change marker was seen but capped at minor per the rule
-    above, say so here.
+    / auto-detected — and from which commit types, if auto-detected / date-based), the tag that
+    was pushed, and **how many commits went out in total**, naming any that were written by
+    earlier `/commit` runs. If a breaking-change marker was seen but capped at minor per the
+    rule above, say so here.
 
 Never use `--force` or `--no-verify`. Extra context from the user: $ARGUMENTS

@@ -1,15 +1,18 @@
-# `commit-and-tag`
+# `commit-tag-push`
 
-Ship a release in one step: Conventional Commit, version bump, changelog release section,
-tag, push.
+Ship in one step: Conventional Commit, version bump, changelog release section, tag, then
+push the commits and the tag.
+
+This is the only skill here that touches the remote. [`commit`](../commit/) never pushes, so
+local commits pile up until you run this.
 
 ## Usage
 
 ```
-/commit-and-tag              # auto-detect the bump
-/commit-and-tag patch
-/commit-and-tag minor closes #42
-/commit-and-tag 2.1.0
+/commit-tag-push              # auto-detect the bump
+/commit-tag-push patch
+/commit-tag-push minor closes #42
+/commit-tag-push 2.1.0
 ```
 
 The first token is the version directive; the rest is free-text context.
@@ -19,6 +22,9 @@ The first token is the version directive; the rest is free-text context.
 | `X.Y.Z` | Exactly that. A leading `v` is stripped. |
 | `patch` / `minor` / `major` | That segment of the current version, incremented, lower segments zeroed. |
 | absent, or unrecognized | Auto-detected — and the whole argument is treated as context. |
+
+Under a date-based scheme the directive is ignored, because the version is today's date. The
+skill says so in its report rather than pretending the argument did something.
 
 ### Auto-detection
 
@@ -34,26 +40,34 @@ infer from a commit message. When a breaking marker is seen the bump is still ca
 minor and the report says so, so you can re-run with an explicit `major` if that is what
 you meant.
 
+## What it pushes
+
+Both the commits and the tag, as two separate commands so a failure on either is visible.
+
+The commit push carries **every unpushed commit on the branch**, not just the one written
+here. That is the intended workflow: `/commit` as many times as you like while you work,
+then one `/commit-tag-push` to cut the release and send everything. The skill lists the
+pending commits in its context before it starts and reports the total it pushed.
+
 ## What it does beyond `/commit`
 
 - Always cuts a release, folding the **entire** `[Unreleased]` section — including entries
-  left by earlier plain `/commit` runs — into a new release header, then leaving a fresh
-  empty `[Unreleased]`.
+  left by earlier `/commit` runs — into a new release header, then leaving a fresh empty
+  `[Unreleased]`.
 - Maintains the reference-style compare-links block at the bottom of `CHANGELOG.md` if one
   exists: repoints `[Unreleased]:` at the new tag and inserts a link comparing the new tag
   against the previous one. The repo URL is read from `git remote get-url origin`, not
   assumed; with no remote, the block is skipped.
-- Refuses before touching anything if the target tag already exists. For bump-keyword and
-  auto-detect modes it computes the concrete `X.Y.Z` first, specifically so the collision
-  check happens before any file is written.
+- Refuses before touching anything if the target version already exists — as a tag, or as a
+  changelog section in a repo with no tags. For bump-keyword and auto-detect modes it
+  computes the concrete `X.Y.Z` first, specifically so the collision check happens before any
+  file is written.
 
 ## Project support
 
 Same detection as [`commit`](../commit/): manifest from `Cargo.toml` / `package.json` /
-`pyproject.toml` / none, scheme from the latest tag's shape. Under the date-based scheme
-the target version is today's `YYYYMMDD` and the version argument is meaningless — the
-skill says so instead of ignoring it silently, and the tag-collision refusal is what
-prevents a second release on the same day.
+`pyproject.toml` / none, and the versioning scheme from the latest tag — falling back to the
+changelog's existing release headers when the repo has no tags, then to SemVer.
 
 ## Adapting it
 
@@ -62,3 +76,5 @@ prevents a second release on the same day.
 - **Changelog compare links** assume a GitHub-style `/compare/a...b` URL. Change the
   template for GitLab or others.
 - **Pre-release versions** are not supported: `X.Y.Z` only, no `-rc.1` or build metadata.
+- **Pushing to a branch other than the current one** is not handled; it pushes what you are
+  on.

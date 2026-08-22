@@ -5,22 +5,32 @@ attribution anywhere in the history.
 
 | Skill | Use it when |
 | --- | --- |
-| [`commit`](commit/) | Everyday commits. Writes the commit and a `[Unreleased]` changelog entry, then pushes. Cuts a release too, but only if you ask with `as patch\|minor\|major\|X.Y.Z`. |
-| [`commit-and-tag`](commit-and-tag/) | You are shipping. Always bumps the version, folds `[Unreleased]` into a release section, tags, and pushes — and can work out the bump size from the commit types since the last tag. |
+| [`commit`](commit/) | Everyday commits. Writes the commit and a `[Unreleased]` changelog entry. Cuts a release too, if you ask with `as patch\|minor\|major\|X.Y.Z`. **Never pushes.** |
+| [`commit-tag-push`](commit-tag-push/) | You are shipping. Always bumps the version, folds `[Unreleased]` into a release section, tags, and pushes the tag along with every commit waiting on the branch — and can work out the bump size from the commit types since the last tag. |
 
-If you only install one, install `commit` — it does the release path as an argument.
-`commit-and-tag` exists because "release now" deserves its own verb, and because it can
-auto-detect the bump.
+The split is about the remote, not the release. `commit` stays local however you invoke it,
+so you can stack up work and review it before any of it leaves the machine.
+`commit-tag-push` is the one verb that touches `origin`.
+
+```
+/commit            /commit            /commit-tag-push minor
+   |                  |                       |
+   +-- local ---------+-- local --------------+--> origin: 3 commits + tag
+```
+
+To push commits made by `commit` without cutting another release, do it yourself with
+`git push --follow-tags`.
 
 ## Prerequisites
 
-- **A git repo with a remote.** The compare links in `commit-and-tag` come from
-  `git remote get-url origin`; without a remote that step is skipped.
+- **A git repo with a remote**, for `commit-tag-push`. `commit` works fine without one. The
+  compare links come from `git remote get-url origin`; without a remote that step is skipped.
 - **`CHANGELOG.md` at the repo root.** Created for you if missing.
-- **Conventional Commits already in use**, ideally. `commit-and-tag`'s auto-detection reads
+- **Conventional Commits already in use**, ideally. `commit-tag-push`'s auto-detection reads
   the types of commits since the last tag; unparseable history falls back to a patch bump.
 - **A version manifest, or none.** Cargo, npm, and pyproject are detected and written to;
-  a repo with no manifest works fine — the tag becomes the only record of the version.
+  a repo with no manifest works fine — the tag, or the changelog header, becomes the only
+  record of the version.
 - **Node** must be on `PATH` for npm projects, **cargo** for Rust projects. Only the branch
   matching your project runs.
 
@@ -35,7 +45,7 @@ cp -r commit .claude/skills/          # this project (Copilot reads this path to
 cp -r commit .github/skills/          # this project, Copilot's own path
 ```
 
-Then invoke as `/commit` or `/commit-and-tag`. Both set
+Then invoke as `/commit` or `/commit-tag-push`. Both set
 `disable-model-invocation: true`, so they never fire on their own — a commit only ever
 happens because you asked for one.
 
@@ -64,10 +74,16 @@ It ships as part of [`cursor/plugins`](https://github.com/cursor/plugins); copy 
 
 ## Design notes
 
-**Versioning is detected, not assumed.** The scheme comes from the shape of the latest tag:
-`v1.2.3` means SemVer, an 8-digit `20260815` means date-based, no tags means SemVer. The
-project type comes from which manifest exists. Earlier versions of these skills hard-coded
-one project and one scheme each, which made them useless outside the repo they came from.
+**Versioning is detected, not assumed.** The scheme comes from the shape of the latest tag —
+`v1.2.3` for SemVer, `2026-08-23` or `20260815` for date-based. With no tags it falls back to
+the shape of the existing changelog release headers, so a repo that dates its changelog and
+never tags still works; with neither signal, SemVer. The project type comes from which
+manifest exists. Earlier versions of these skills hard-coded one project and one scheme each,
+which made them useless outside the repo they came from.
+
+**Only one of them can reach the remote.** `commit` has no `Bash(git push *)` in its
+`allowed-tools` at all, so the restriction is enforced by the harness rather than by the
+model remembering a rule. Pushing is a decision worth making on purpose.
 
 **Attribution is stripped at the prompt level.** Both skills forbid `Co-Authored-By`
 trailers, generated-by lines, and tool or model names in commit messages, then re-read the
