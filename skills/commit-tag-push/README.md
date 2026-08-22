@@ -51,9 +51,10 @@ pending commits in its context before it starts and reports the total it pushed.
 
 ## What it does beyond `/commit`
 
-- Always cuts a release, folding the **entire** `[Unreleased]` section — including entries
-  left by earlier `/commit` runs — into a new release header, then leaving a fresh empty
-  `[Unreleased]`.
+- Always cuts a release. Under SemVer that means folding the **entire** `[Unreleased]`
+  section — including entries left by earlier `/commit` runs — into a new release header and
+  leaving a fresh empty `[Unreleased]`. Under a date-based scheme there is nothing to fold:
+  the day's entries are already sitting under `## <today>`, and that section *is* the release.
 - Maintains the reference-style compare-links block at the bottom of `CHANGELOG.md` if one
   exists: repoints `[Unreleased]:` at the new tag and inserts a link comparing the new tag
   against the previous one. The repo URL is read from `git remote get-url origin`, not

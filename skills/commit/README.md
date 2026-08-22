@@ -49,6 +49,31 @@ git push --follow-tags
 8. Tags when a version argument was given, and reports how far ahead of upstream the branch
    now sits.
 
+## Commit message body
+
+Bodies follow a fixed shape: one or two sentences giving the main idea, then a flat bullet
+list of what changed — no group headings, fewer and shorter items than a changelog entry.
+
+```
+Rework how both commit skills write messages and changelog entries
+
+- Commit bodies now lead with a summary and a flat list of changes
+- Date-based changelogs aggregate into today's section instead of Unreleased
+```
+
+Trivial work stays out of the list — typo fixes, formatting, dependency bumps — unless it is
+the point of the commit. A list longer than about six bullets is treated as a signal that the
+commit should be split. A one-line change gets no body at all.
+
+## Where the changelog entry goes
+
+Under **SemVer**, into `## [Unreleased]`, as usual.
+
+Under a **date-based** scheme, into `## <today>` — and never into `[Unreleased]`, which does
+not appear in these changelogs at all. A repo that dates its sections is usually not tagging,
+so the dated section is the release. Several commits on the same day accumulate into one
+section rather than each starting their own, which is what you want to read back later.
+
 ## Project support
 
 The manifest is detected, in this order: `Cargo.toml`, `package.json`, `pyproject.toml`,

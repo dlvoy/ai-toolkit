@@ -86,8 +86,8 @@ This applies to the changelog entry too: it describes the change, never who or w
 - **scope** is optional: a noun naming a section of the codebase, in parentheses — `fix(parser):`.
 - **description** follows immediately after the colon and space. Imperative mood, no trailing
   period. Keep the whole subject line under 72 characters.
-- **body** is optional, begins one blank line after the description, and may span several
-  paragraphs. Explain what changed and why, not how.
+- **body** is optional, begins one blank line after the description, and follows the house
+  format in "Body format" below. Explain what changed and why, not how.
 - **footers** are optional, begin one blank line after the body, and use the git trailer form
   `Token: value` or `Token #value`. The token uses `-` in place of spaces: `Refs: #123`.
 - **Breaking changes** are marked with `!` before the colon, e.g. `feat(api)!:`, or with a
@@ -106,6 +106,33 @@ feat!: drop support for Node 6
 
 BREAKING CHANGE: use JavaScript features not available in Node 6.
 ```
+
+## Body format
+
+Write the body as a summary followed by a flat list:
+
+1. **One or two sentences** giving the main idea behind the whole change — what it is for.
+   Not a restatement of the subject line.
+2. **A blank line, then a short bullet list** of what changed. Like a changelog entry but
+   flatter: no group headings, fewer items, shorter lines.
+
+```
+Rework how both commit skills write messages and changelog entries
+
+- Commit bodies now lead with a summary and a flat list of changes
+- Date-based changelogs aggregate into today's section instead of Unreleased
+```
+
+Keep the list to changes that matter to someone reading the history later. **Leave trivial
+work out** — typo fixes, formatting, comment rewording, dependency bumps — unless that is the
+whole point of the commit, in which case it is the whole list. A commit that only fixes typos
+says so; a commit that fixes a few typos while adding a feature mentions only the feature.
+
+Three to six bullets is usually right. A longer list is a sign the commit is doing more than
+one thing — go back to Step 1 and consider splitting it.
+
+A one-line change with nothing to summarize needs no body at all. The subject line alone is a
+complete commit message.
 
 ## Versioning scheme — detect, never assume
 
@@ -160,10 +187,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Under a date-based scheme, replace that Semantic Versioning line with "and this project uses
 date-based version numbers in `YYYY-MM-DD` form." (or `YYYYMMDD`, matching the detected form).
 
-Add the entry under `## [Unreleased]`, in the correct group, creating the group heading if
-it is absent. If there is no `[Unreleased]` section — a previous release cut consumed it, or
-the file was edited by hand — add one above the newest release section. Groups appear in this
-order and only when non-empty:
+### Where the entry goes
+
+This depends on the detected scheme, and the two cases behave differently:
+
+| Scheme | Section the entry goes in |
+| --- | --- |
+| SemVer | `## [Unreleased]` |
+| Date-based | `## <today>` — never `[Unreleased]` |
+
+**SemVer** — add the entry under `## [Unreleased]`. If there is no such section, because a
+previous release cut consumed it or the file was edited by hand, add one above the newest
+release section.
+
+**Date-based** — a repo that dates its changelog sections is usually not tagging releases at
+all, so there is nothing for an `[Unreleased]` section to be waiting for: the dated section
+*is* the release. Therefore:
+
+- If a section headed with today's date already exists, add the entry to it.
+- If not, create `## <today>` at the top, above the previous dated section.
+- Never add an `[Unreleased]` section to a date-based changelog, and never leave one behind.
+
+Several commits on the same day accumulate into one dated section. That is the point — a
+reader wants one list per day, not one per commit. When today's section already has an entry
+in the group you need, add a bullet to it rather than starting a second copy of the group.
+
+In both cases, put the entry in the correct group, creating the group heading if it is absent.
+Groups appear in this order and only when non-empty:
 
 | Group        | Use for                         |
 | ------------ | -------------------------------- |
@@ -197,9 +247,12 @@ Rules for entries:
   first. **Match the existing file** where it differs — notably the brackets, which some repos
   drop when they keep no reference-style compare links; use brackets only for a new file.
   A pulled release is marked `[YANKED]` after the header.
-- Do not create a released section — this skill only writes under `[Unreleased]`, **unless**
-  this is a version commit (`as patch|minor|major|X.Y.Z` — see below), which folds the release
-  cut into this same commit instead of leaving it as a separate task.
+- Under SemVer, do not create a released section — this skill writes under `[Unreleased]`,
+  **unless** this is a version commit (`as patch|minor|major|X.Y.Z` — see below), which folds
+  the release cut into this same commit instead of leaving it as a separate task. Under a
+  date-based scheme today's section is where entries go from the start, so there is no
+  separate cut to make: `as ...` adds the version bump and the tag, and leaves the changelog
+  section exactly where it already is.
 
 ## Version argument — `as patch|minor|major|X.Y.Z`
 
@@ -220,10 +273,11 @@ attribution check), plus:
    This is a direct instruction from the user, not an inference from the commit's own type:
    `as patch` bumps patch even when the change here is a `feat`, and the reverse. Under a
    date-based scheme the argument is moot and today's date is used.
-2. **Refuse early if that version already exists** — the tag resolves (`git rev-parse "<tag>"`),
-   or, in a repo with no tags, a changelog section already carries it. Stop and tell the user
-   instead of silently doing nothing or overwriting it. Do this *before* Step 1 of Steps below,
-   before staging or writing anything at all.
+2. **Refuse early if that tag already exists** (`git rev-parse "<tag>"` resolves) — stop and
+   tell the user instead of silently doing nothing or overwriting it. Do this *before* Step 1
+   of Steps below, before staging or writing anything at all. Judge this on tags only: under a
+   date-based scheme a changelog section headed with today's date is expected to be there
+   already, and is not a collision.
 3. **Set the version** with the command for this project's manifest, per the table above, and
    add every file it touched to what gets staged for this commit.
 4. **Cut the changelog release section**, folded into the same edit as the normal changelog

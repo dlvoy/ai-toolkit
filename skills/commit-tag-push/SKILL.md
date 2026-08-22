@@ -100,8 +100,8 @@ This applies to the changelog entry too: it describes the change, never who or w
 - **scope** is optional: a noun naming a section of the codebase, in parentheses — `fix(parser):`.
 - **description** follows immediately after the colon and space. Imperative mood, no trailing
   period. Keep the whole subject line under 72 characters.
-- **body** is optional, begins one blank line after the description, and may span several
-  paragraphs. Explain what changed and why, not how.
+- **body** is optional, begins one blank line after the description, and follows the house
+  format in "Body format" below. Explain what changed and why, not how.
 - **footers** are optional, begin one blank line after the body, and use the git trailer form
   `Token: value` or `Token #value`. The token uses `-` in place of spaces: `Refs: #123`.
 - **Breaking changes** are marked with `!` before the colon, e.g. `feat(api)!:`, or with a
@@ -110,6 +110,33 @@ This applies to the changelog entry too: it describes the change, never who or w
   then describes the break.
 - If the change fits more than one type, split it into several commits rather than picking one.
 - Reverts: `revert: <original subject>` with a footer `Refs: <sha>, <sha>`.
+
+## Body format
+
+Write the body as a summary followed by a flat list:
+
+1. **One or two sentences** giving the main idea behind the whole change — what it is for.
+   Not a restatement of the subject line.
+2. **A blank line, then a short bullet list** of what changed. Like a changelog entry but
+   flatter: no group headings, fewer items, shorter lines.
+
+```
+Rework how both commit skills write messages and changelog entries
+
+- Commit bodies now lead with a summary and a flat list of changes
+- Date-based changelogs aggregate into today's section instead of Unreleased
+```
+
+Keep the list to changes that matter to someone reading the history later. **Leave trivial
+work out** — typo fixes, formatting, comment rewording, dependency bumps — unless that is the
+whole point of the commit, in which case it is the whole list. A commit that only fixes typos
+says so; a commit that fixes a few typos while adding a feature mentions only the feature.
+
+Three to six bullets is usually right. A longer list is a sign the commit is doing more than
+one thing — go back to Step 1 and consider splitting it.
+
+A one-line change with nothing to summarize needs no body at all. The subject line alone is a
+complete commit message.
 
 ## Versioning scheme — detect, never assume
 
@@ -196,12 +223,21 @@ Rules for entries:
   entry unless behaviour changed. `docs` gets an entry only when user-facing docs changed.
   A `feat` or `fix` always gets one.
 
-Unlike plain `/commit` (which only ever adds to `[Unreleased]`), **this skill always cuts a
-release**: after adding this change's own entry to `[Unreleased]`, it folds the *entire*
+**This skill always cuts a release.** How it does that depends on the scheme:
+
+**SemVer** — add this change's own entry to `[Unreleased]`, then fold the *entire*
 `[Unreleased]` section — including any entries left there by earlier plain `/commit` runs, not
-just this one — into a new release header, and leaves a fresh empty `## [Unreleased]` above it.
+just this one — into a new release header, leaving a fresh empty `## [Unreleased]` above it.
 If there is no `[Unreleased]` section at all, add this change's entry directly under a new
-release header. If the reference-style compare links block exists at the bottom of the file
+release header.
+
+**Date-based** — there is nothing to fold. Entries already live in a section headed by today's
+date, because `/commit` puts them there instead of in `[Unreleased]`. Add this change's entry
+to that section — creating `## <today>` at the top if this is the day's first commit — and that
+section *is* the release. Do not create an `[Unreleased]` section, before or after. Earlier
+entries from today's `/commit` runs are already in place and ship as part of this release.
+
+In both cases, if the reference-style compare links block exists at the bottom of the file
 (see format above), update it too: repoint the `[Unreleased]:` link at the new tag, and insert
 a new `[<version>]:` link comparing it against the previous tag. Read the repo URL from
 `git remote get-url origin` (strip a trailing `.git`) rather than assuming one; if there is no
@@ -237,9 +273,10 @@ free-text context (a ticket id or note), same as plain `/commit`. Resolve the ta
    - No commits since the last tag and the new commit is the only change: base the decision on
      that one commit's type using the same rule.
 
-**Refuse early if the resulting version already exists** — the tag resolves
-(`git rev-parse "<tag>"`), or, in a repo with no tags, a changelog section already carries it.
-Stop and tell the user instead of silently doing nothing or overwriting it. Do this before
+**Refuse early if the resulting tag already exists** (`git rev-parse "<tag>"` resolves) — stop
+and tell the user instead of silently doing nothing or overwriting it. Judge this on tags only:
+under a date-based scheme a changelog section headed with today's date is expected to be there
+already, put there by the day's `/commit` runs, and is not a collision. Do this before
 staging or writing anything at all, which means: for bump-keyword and auto-detect modes, you
 must compute the concrete `X.Y.Z` (step 2's arithmetic, or step 3's arithmetic after deciding
 the bump size) before this check, not defer it to when the version is written.

@@ -21,3 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   accumulate locally until you push them yourself or run `commit-tag-push`.
 - `commit-and-tag` is now `commit-tag-push`, and pushes the new tag together with every
   commit still waiting on the branch.
+- Commit bodies now follow a fixed shape: a one or two sentence summary, then a flat list of
+  the changes that matter, with trivial work left out.
+- Date-based changelogs no longer use an `Unreleased` section. Entries go straight into the
+  section for today's date, and several commits on the same day accumulate into one section.
