@@ -42,6 +42,26 @@ happens because you asked for one.
 The `README.md` in each skill folder is documentation for this repo, not part of the
 skill. Copying it along is harmless.
 
+## Elsewhere
+
+Skills I rely on but do not host here — install them from the source.
+
+### [`unslop`](https://github.com/cursor/plugins/blob/main/pstack/skills/unslop/SKILL.md)
+
+Strips the tells that make agent output read as machine-written. Thirty-one categories of
+them: puffery, "delve" and "landscape" vocabulary, fancy synonyms for "is", forced
+rule-of-three lists, em dash and colon overuse, title case headings, decorative emoji,
+chatbot sign-offs, hedging, sycophancy, abstract metaphors like "substrate" and "paradigm".
+The second half is the harder part — vary the sentence rhythm, use specifics, have an
+opinion.
+
+Worth having on any agent that writes prose you will show to someone else. Its description
+is `Cut AI tells from any writing. Must always apply.`, so unlike the two skills here it is
+meant to load on relevance and stay loaded, not wait for a slash command.
+
+It ships as part of [`cursor/plugins`](https://github.com/cursor/plugins); copy the
+`pstack/skills/unslop/` folder into any of the skill paths listed above.
+
 ## Design notes
 
 **Versioning is detected, not assumed.** The scheme comes from the shape of the latest tag:
