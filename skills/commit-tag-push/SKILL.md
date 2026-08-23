@@ -127,7 +127,7 @@ repo's first commit *and* its first release, and several assumptions here do not
   so look at what you are about to stage. If there is no `.gitignore` and the tree contains
   `node_modules/`, `target/`, `dist/`, `.venv/`, `__pycache__/`, `.env` or similar, stop and say
   so before staging anything — offer to write a `.gitignore` first.
-- **The branch has no upstream**, so the push in Step 10 is `git push -u origin <branch>`.
+- **The branch has no upstream**, so the push in Step 11 is `git push -u origin <branch>`.
 - **No version signals.** There are no tags and usually no changelog, so the scheme has to be
   asked for — see "No signal at all" below.
 - **Bump keywords and auto-detection are meaningless for a first release.** There is no previous
@@ -146,6 +146,44 @@ The commit message contains only what is specified below. Never add:
 
 The only footers permitted are the ones these instructions define or the user asks for.
 This applies to the changelog entry too: it describes the change, never who or what wrote it.
+
+## Privacy — hard rule
+
+Commit messages, changelog entries, and tag names are published. They travel to every clone
+and every forge page, and taking one back means rewriting history. Nothing that identifies
+this machine, or the person sitting at it, belongs in them:
+
+- **Absolute local paths.** `C:\Users\<name>\...`, `/home/<name>/...`, `/Users/<name>/...`,
+  UNC shares, drive letters. Name a file by its repo-relative path — `src/config.rs`, not the
+  path you happen to have it open at.
+- **Anything outside the repo.** Local folder names, sibling checkouts, scratch and temp
+  directories, where the project sits on disk. Someone with a fresh clone sees none of it.
+- **Machine and account identifiers.** OS user names, home-directory names, hostnames, LAN
+  addresses, device names, licence keys.
+- **Personal data.** Email addresses, real names, phone numbers, postal addresses — the
+  author's own included. Git records the author already; the message need not.
+- **Credentials.** Tokens, API keys, passwords, connection strings, cookies. Expired ones and
+  partially masked ones count.
+- **Private infrastructure.** Intranet hosts, internal endpoints, links to trackers the
+  repo's readers cannot reach, unless the repo already refers to them openly.
+
+Sanitise, do not omit. Describe the change and drop the identifying particulars: "fix the
+config loader when the home directory is missing" carries everything that "fix loading
+C:\Users\jsmith\AppData\config.toml" does, without the leak.
+
+The trap is a diff that contains such a value — a path in a test fixture, a sample config, a
+pasted log line. **Seeing it in the diff is not permission to repeat it.** Say which file and
+which setting changed, and leave the value where it is.
+
+The extra context the user passed to this skill gets the same treatment. It is quoted only
+once it is clear of the list above: a ticket id is fine, a note with a home directory in it is
+paraphrased.
+
+If a change genuinely cannot be described without naming a private value, stop and ask the
+user before writing anything.
+
+Reread the subject, body, footers, and every changelog line against this list before
+committing.
 
 ## Commit message format — Conventional Commits 1.0.0
 
@@ -393,7 +431,10 @@ the bump size) before this check, not defer it to when the version is written.
    cut the release (fold `[Unreleased]` into the release header, add a fresh empty `[Unreleased]`
    above it, update the compare-links block if present). Stage it too. Skip this step entirely if
    the user declined a changelog in Step 3.
-7. Commit with a heredoc so the body and footers keep their newlines:
+7. Draft the message, then check the subject, body, footers, and the changelog lines you wrote
+   against "Privacy — hard rule" above. This is a release: the text is about to be pushed, and
+   a leak in it is public the moment Step 11 runs. Rewrite whatever fails.
+8. Commit with a heredoc so the body and footers keep their newlines:
 
 ```bash
    git commit -m "$(cat <<'EOF'
@@ -409,16 +450,19 @@ the bump size) before this check, not defer it to when the version is written.
    If there is no real code change beyond the version bump (working tree was otherwise clean —
    this was run purely to cut a release), use `chore(release): <tag>` as the message instead of
    inferring a type from an empty diff.
-8. Run `git log -1 --pretty=%B` and read the result. If any attribution trailer or generated-by
-   line appears, remove it with `git commit --amend` before continuing.
-9. Tag the commit: `git tag "<tag>"`.
-10. Push the commits: `git push`, or `git push -u origin <branch>` if the branch has no
+9. Run `git log -1 --pretty=%B` and read the result, then reread the changelog lines you wrote.
+   Amend with `git commit --amend` if an attribution trailer or generated-by line appears, or if
+   any local path, user name, hostname, credential, or other item from "Privacy — hard rule" made
+   it in. This is the last point at which a fix costs nothing — after Step 11 it costs a
+   force-push, which this skill will not do.
+10. Tag the commit: `git tag "<tag>"`.
+11. Push the commits: `git push`, or `git push -u origin <branch>` if the branch has no
     upstream — which is always the case on an initial commit. This carries every unpushed commit
     on the branch, including any left behind by earlier `/commit` runs — the dynamic context
     above listed them.
-11. Push the tag: `git push origin "<tag>"`. Do this as its own command rather than relying on
+12. Push the tag: `git push origin "<tag>"`. Do this as its own command rather than relying on
     `--follow-tags`, so a failure here is visible instead of silent.
-12. Report: the commit hash, the subject line, the changelog changes (entry added and the
+13. Report: the commit hash, the subject line, the changelog changes (entry added and the
     release section cut), the resolved version and how it was resolved (explicit / bump keyword
     / auto-detected — and from which commit types, if auto-detected / date-based), the tag that
     was pushed, and **how many commits went out in total**, naming any that were written by

@@ -115,6 +115,44 @@ The commit message contains only what is specified below. Never add:
 The only footers permitted are the ones these instructions define or the user asks for.
 This applies to the changelog entry too: it describes the change, never who or what wrote it.
 
+## Privacy — hard rule
+
+Commit messages, changelog entries, and tag names are published. They travel to every clone
+and every forge page, and taking one back means rewriting history. Nothing that identifies
+this machine, or the person sitting at it, belongs in them:
+
+- **Absolute local paths.** `C:\Users\<name>\...`, `/home/<name>/...`, `/Users/<name>/...`,
+  UNC shares, drive letters. Name a file by its repo-relative path — `src/config.rs`, not the
+  path you happen to have it open at.
+- **Anything outside the repo.** Local folder names, sibling checkouts, scratch and temp
+  directories, where the project sits on disk. Someone with a fresh clone sees none of it.
+- **Machine and account identifiers.** OS user names, home-directory names, hostnames, LAN
+  addresses, device names, licence keys.
+- **Personal data.** Email addresses, real names, phone numbers, postal addresses — the
+  author's own included. Git records the author already; the message need not.
+- **Credentials.** Tokens, API keys, passwords, connection strings, cookies. Expired ones and
+  partially masked ones count.
+- **Private infrastructure.** Intranet hosts, internal endpoints, links to trackers the
+  repo's readers cannot reach, unless the repo already refers to them openly.
+
+Sanitise, do not omit. Describe the change and drop the identifying particulars: "fix the
+config loader when the home directory is missing" carries everything that "fix loading
+C:\Users\jsmith\AppData\config.toml" does, without the leak.
+
+The trap is a diff that contains such a value — a path in a test fixture, a sample config, a
+pasted log line. **Seeing it in the diff is not permission to repeat it.** Say which file and
+which setting changed, and leave the value where it is.
+
+The extra context the user passed to this skill gets the same treatment. It is quoted only
+once it is clear of the list above: a ticket id is fine, a note with a home directory in it is
+paraphrased.
+
+If a change genuinely cannot be described without naming a private value, stop and ask the
+user before writing anything.
+
+Reread the subject, body, footers, and every changelog line against this list before
+committing.
+
 ## Commit message format — Conventional Commits 1.0.0
 
 ```
@@ -357,11 +395,11 @@ attribution check), plus:
    entry rather than a separate step: after writing this change's entry under `[Unreleased]`
    per the rules above, rename that header to the released form for the detected scheme and add
    a fresh empty `## [Unreleased]` above it.
-5. **After the commit succeeds** (Step 4 below), tag it on the commit you just made. If there
+5. **After the commit succeeds** (Step 5 below), tag it on the commit you just made. If there
    was no real code change to commit — the working tree was otherwise clean, so this was run
-   purely to cut a release — the commit message in Step 4 is `chore(release): <tag>` instead of
+   purely to cut a release — the commit message in Step 5 is `chore(release): <tag>` instead of
    a type inferred from an empty diff.
-6. **When reporting** (Step 6 below), include the tag name and the resolved version, and say
+6. **When reporting** (Step 8 below), include the tag name and the resolved version, and say
    the tag has not been pushed.
 
 ## Steps
@@ -376,7 +414,9 @@ attribution check), plus:
    all, ask now per "No signal at all" above — before writing anything — and honour the answer.
    Update `CHANGELOG.md` per the rules above (including the release-cut variant if a version
    argument is present), then stage it too; skip it entirely if the user declined a changelog.
-4. Commit with a heredoc so the body and footers keep their newlines:
+4. Draft the message, then check the subject, body, footers, and the changelog lines against
+   "Privacy — hard rule" above before anything is written down. Rewrite whatever fails.
+5. Commit with a heredoc so the body and footers keep their newlines:
 
 ```bash
    git commit -m "$(cat <<'EOF'
@@ -388,10 +428,12 @@ attribution check), plus:
    EOF
    )"
 ```
-5. Run `git log -1 --pretty=%B` and read the result. If any attribution trailer or generated-by
-   line appears, remove it with `git commit --amend`.
-6. If a version argument was given, tag the commit now: `git tag "<tag>"`.
-7. Report the commit hash, the subject line, the changelog line you added, and (if applicable)
+6. Run `git log -1 --pretty=%B` and read the result, then reread the changelog lines you wrote.
+   Amend with `git commit --amend` if an attribution trailer or generated-by line appears, or if
+   any local path, user name, hostname, credential, or other item from "Privacy — hard rule" made
+   it in. Amending now is cheap: the commit has not left the machine.
+7. If a version argument was given, tag the commit now: `git tag "<tag>"`.
+8. Report the commit hash, the subject line, the changelog line you added, and (if applicable)
    the resolved version and the tag that was created. State how many commits the branch is now
    ahead of its upstream (`git rev-list --count @{upstream}..HEAD`, or that there is no upstream
    — an initial commit never has one, so do not run that command there), and remind the user that

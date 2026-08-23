@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - A prompt for the versioning scheme, and for whether to create a `CHANGELOG.md`, shown when
   a repo has no tag, changelog, or manifest version to infer either from. Both skills used to
   assume SemVer and create the file uninvited.
+- A privacy rule in both skills, keeping absolute local paths, folder names from outside the
+  repo, machine and account names, personal data, credentials, and internal URLs out of commit
+  messages, changelog entries, and tags. A private value sitting in the diff is described
+  rather than repeated, and the text is checked both before and after the commit.
 
 ### Changed
 

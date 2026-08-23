@@ -64,6 +64,15 @@ pending commits in its context before it starts and reports the total it pushed.
   computes the concrete `X.Y.Z` first, specifically so the collision check happens before any
   file is written.
 
+## What never reaches the message
+
+Same rule as [`commit`](../commit/), and it matters more here because the text is pushed: no
+absolute local paths, no folder names from outside the repo, no OS user names or hostnames, no
+email addresses or real names, no tokens or connection strings, no internal URLs — and no AI
+attribution. The drafted message and changelog lines are checked before the commit and again
+after it, while amending is still free. Once the push in step 11 has run, fixing a leak would
+take a force-push, which this skill refuses.
+
 ## Project support
 
 Same detection as [`commit`](../commit/): manifest from `Cargo.toml` / `package.json` /
@@ -101,3 +110,5 @@ directive was ignored.
 - **Pre-release versions** are not supported: `X.Y.Z` only, no `-rc.1` or build metadata.
 - **Pushing to a branch other than the current one** is not handled; it pushes what you are
   on.
+- **The privacy list** — add whatever else your projects must not publish: client names,
+  customer ids, internal codenames.

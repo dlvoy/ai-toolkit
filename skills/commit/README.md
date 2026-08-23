@@ -1,7 +1,7 @@
 # `commit`
 
 Stage, write a Conventional Commit, add a Keep a Changelog entry under `[Unreleased]`, and
-verify no AI attribution crept into the message.
+verify that neither AI attribution nor anything private crept into the message.
 
 **It never pushes.** Not the commit, and not the tag when you ask for one. Commits stack up
 locally until you push them yourself or run [`commit-tag-push`](../commit-tag-push/).
@@ -46,9 +46,12 @@ git push --follow-tags
    contains unrelated changes needing different types.
 5. Writes the changelog entry as something a human would want to read, not a restated
    commit subject.
-6. Commits via heredoc so bodies and footers keep their newlines.
-7. Re-reads the message with `git log -1` and amends if an attribution trailer appears.
-8. Tags when a version argument was given, and reports how far ahead of upstream the branch
+6. Checks the drafted message and changelog lines against the privacy rule before writing
+   anything down.
+7. Commits via heredoc so bodies and footers keep their newlines.
+8. Re-reads the message with `git log -1` and amends if an attribution trailer, a local path,
+   a user name, or any other private detail appears.
+9. Tags when a version argument was given, and reports how far ahead of upstream the branch
    now sits.
 
 ## Commit message body
@@ -66,6 +69,21 @@ Rework how both commit skills write messages and changelog entries
 Trivial work stays out of the list — typo fixes, formatting, dependency bumps — unless it is
 the point of the commit. A list longer than about six bullets is treated as a signal that the
 commit should be split. A one-line change gets no body at all.
+
+## What never reaches the message
+
+Commit text is published, so the skill keeps the machine it was written on out of it. No
+absolute local paths (`C:\Users\...`, `/home/...`), no folder names from outside the repo, no
+OS user names or hostnames, no email addresses or real names, no tokens or connection strings,
+no internal URLs. Files are named by their repo-relative path.
+
+Seeing such a value in the diff is not permission to repeat it: the message says which file and
+which setting changed and leaves the value in the file. Free text you pass as an argument gets
+the same treatment. If a change truly cannot be described without naming something private, the
+skill stops and asks rather than guessing at what you would rather not publish.
+
+The same rule bars AI attribution — `Co-Authored-By: Claude`, generated-by lines, model names,
+emoji — from the message and the changelog alike.
 
 ## Where the changelog entry goes
 
@@ -119,3 +137,5 @@ Likely edits when you install this somewhere new:
   prefix for a date.
 - **The no-push rule** — if you want the old behaviour back, add a push step at the end and
   put `Bash(git push *)` back in `allowed-tools`.
+- **The privacy list** — add whatever else your projects must not publish: client names,
+  customer ids, internal codenames.

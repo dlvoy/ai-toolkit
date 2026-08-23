@@ -1,7 +1,7 @@
 # Skills
 
-Agent Skills for git hygiene: Conventional Commits in, Keep a Changelog out, no AI
-attribution anywhere in the history.
+Agent Skills for git hygiene: Conventional Commits in, Keep a Changelog out, and neither AI
+attribution nor private local detail anywhere in the history.
 
 | Skill | Use it when |
 | --- | --- |
@@ -98,6 +98,15 @@ commit and tag are already written is the worst time to find out.
 **Only one of them can reach the remote.** `commit` has no `Bash(git push *)` in its
 `allowed-tools` at all, so the restriction is enforced by the harness rather than by the
 model remembering a rule. Pushing is a decision worth making on purpose.
+
+**Nothing about your machine gets published.** Commit messages, changelog entries, and tags
+outlive the session and travel to every clone, so both skills forbid absolute local paths
+(`C:\Users\...`, `/home/...`), folder names from outside the repo, OS user names, hostnames,
+email addresses and real names, credentials, and internal URLs. Files are referred to by their
+repo-relative path. A private value appearing *in the diff* is explicitly not permission to
+repeat it in the message — the entry says which file and which setting changed. The drafted
+text is checked before the commit, and the committed text is re-read afterwards, which in
+`commit-tag-push` is the last moment before the push makes a leak public.
 
 **Attribution is stripped at the prompt level.** Both skills forbid `Co-Authored-By`
 trailers, generated-by lines, and tool or model names in commit messages, then re-read the
