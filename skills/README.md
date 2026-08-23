@@ -25,7 +25,8 @@ To push commits made by `commit` without cutting another release, do it yourself
 
 - **A git repo with a remote**, for `commit-tag-push`. `commit` works fine without one. The
   compare links come from `git remote get-url origin`; without a remote that step is skipped.
-- **`CHANGELOG.md` at the repo root.** Created for you if missing.
+- **`CHANGELOG.md` at the repo root.** Created for you if missing — though in a repo with no
+  version signal at all, you are asked first rather than having one appear uninvited.
 - **Conventional Commits already in use**, ideally. `commit-tag-push`'s auto-detection reads
   the types of commits since the last tag; unparseable history falls back to a patch bump.
 - **A version manifest, or none.** Cargo, npm, and pyproject are detected and written to;
@@ -77,9 +78,22 @@ It ships as part of [`cursor/plugins`](https://github.com/cursor/plugins); copy 
 **Versioning is detected, not assumed.** The scheme comes from the shape of the latest tag —
 `v1.2.3` for SemVer, `2026-08-23` or `20260815` for date-based. With no tags it falls back to
 the shape of the existing changelog release headers, so a repo that dates its changelog and
-never tags still works; with neither signal, SemVer. The project type comes from which
-manifest exists. Earlier versions of these skills hard-coded one project and one scheme each,
-which made them useless outside the repo they came from.
+never tags still works; with neither, to the manifest's `version` field. The project type comes
+from which manifest exists. Earlier versions of these skills hard-coded one project and one
+scheme each, which made them useless outside the repo they came from.
+
+**With no signal at all, they ask.** A repo with no tag, no changelog, and no manifest version
+has not chosen a scheme, and guessing one on its behalf is how a project ends up with a
+convention nobody picked. Both skills stop and ask two questions in a single prompt — create a
+`CHANGELOG.md`? and SemVer `vX.Y.Z`, `YYYY-MM-DD`, or `YYYYMMDD`? — before staging or writing
+anything. The answer is self-recording: it lands in the changelog preamble and the tag, which
+are the same signals the detection above reads, so the question is asked once per repo.
+
+**They work on an empty repo.** An unborn branch has no `HEAD`, which makes `git diff HEAD`,
+`git log`, and `git describe` all fail, so every context block is guarded and the diff is
+replaced by a listing of the files that would go into the first commit. `commit-tag-push` also
+checks for a remote up front, since a fresh repo often has none and discovering that after the
+commit and tag are already written is the worst time to find out.
 
 **Only one of them can reach the remote.** `commit` has no `Bash(git push *)` in its
 `allowed-tools` at all, so the restriction is enforced by the harness rather than by the

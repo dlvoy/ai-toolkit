@@ -2,16 +2,30 @@
 description: Commit using Conventional Commits and add a Keep a Changelog entry. `as patch|minor|major|X.Y.Z` also bumps the project version and tags the release. Never pushes. Use only when explicitly invoked.
 disable-model-invocation: true
 argument-hint: [ticket id or note] | as <patch|minor|major|X.Y.Z> [ticket id or note]
-allowed-tools: Bash(git add *) Bash(git status *) Bash(git diff *) Bash(git commit *) Bash(git branch *) Bash(git rev-parse *) Bash(git rev-list *) Bash(git log *) Bash(git tag *) Bash(git describe *) Bash(git remote *) Bash(npm version *) Bash(node -p *) Bash(cargo update *) Read Edit Write
+allowed-tools: Bash(git add *) Bash(git status *) Bash(git diff *) Bash(git commit *) Bash(git branch *) Bash(git rev-parse *) Bash(git rev-list *) Bash(git log *) Bash(git tag *) Bash(git describe *) Bash(git remote *) Bash(npm version *) Bash(node -p *) Bash(cargo update *) Bash(git ls-files *) AskUserQuestion Read Edit Write
 ---
 
 ## Current state
 
-Branch: !`git rev-parse --abbrev-ref HEAD`
+Branch: !`git branch --show-current`
+
+Repo state:
+
+```!
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  echo "GIT UNUSABLE HERE - not a repository, or git refused it. Stop and report the error."
+elif git rev-parse --verify HEAD >/dev/null 2>&1; then
+  echo "HEAD exists - ordinary commit"
+else
+  echo "NO COMMITS YET - this run writes the INITIAL COMMIT (see the section below)"
+fi
+```
 
 ```!
 git status --short
-git diff HEAD --stat
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+  git diff HEAD --stat
+fi
 ```
 
 Today: !`date +%Y-%m-%d` (compact: !`date +%Y%m%d`)
@@ -37,7 +51,15 @@ fi
 
 Diff:
 
-!`git diff HEAD`
+```!
+if git rev-parse --verify HEAD >/dev/null 2>&1; then
+  git diff HEAD
+else
+  echo "No commits yet, so there is nothing to diff against."
+  echo "Files that would go into the initial commit:"
+  git ls-files --others --exclude-standard
+fi
+```
 
 Top of changelog:
 
@@ -58,6 +80,29 @@ like, review them, then push when you mean to.
 To ship what has accumulated, use `/commit-tag-push`, which cuts a release and pushes every
 pending commit along with the tag. To push commits made here without cutting another release,
 run `git push --follow-tags` yourself.
+
+## Initial commit — the repo has no commits yet
+
+The "Repo state" block above says whether `HEAD` exists. When it does not, this run is writing
+the repo's first commit, and several assumptions elsewhere in these instructions do not hold:
+
+- **Never run anything against `HEAD`.** `git diff HEAD`, `git log`, `git describe` and
+  `git rev-list @{upstream}..HEAD` all fail on an unborn branch. The context above already
+  substituted a file listing for the diff; read the files themselves to decide type and scope.
+- **Type.** A first commit that imports a working project is a `feat:` naming what the project
+  is. One that lays down scaffolding only — README, licence, config — is `chore: initial commit`.
+  There is no diff to infer a scope from; leave the scope off unless the tree is one component.
+- **Staging.** `git add` works normally, but nothing has ever been ignored in this repo before,
+  so look at what you are about to stage. If there is no `.gitignore` and the tree contains
+  `node_modules/`, `target/`, `dist/`, `.venv/`, `__pycache__/`, `.env` or similar, stop and say
+  so before staging anything — offer to write a `.gitignore` first.
+- **No upstream, and possibly no remote.** Report "no upstream" instead of running
+  `git rev-list --count @{upstream}..HEAD`.
+- **No version signals.** There are no tags and usually no changelog, so the scheme has to be
+  asked for — see "No signal at all" below.
+- **`as patch|minor|major` is meaningless for a first release.** There is no previous version to
+  increment: use the manifest version if the manifest already carries one, otherwise `0.1.0`, and
+  say in the report that the keyword was ignored. `as X.Y.Z` still applies exactly as given.
 
 ## Attribution — hard rule
 
@@ -136,21 +181,47 @@ complete commit message.
 
 ## Versioning scheme — detect, never assume
 
-Only relevant when a version argument is given (see below); plain `/commit` never needs it.
+A version argument (see below) needs the scheme to resolve the target version; plain
+`/commit` needs it too, but only to decide where the changelog entry goes.
 
 Read the signals in this order and stop at the first that answers:
 
 1. **The latest tag**, from the dynamic context above.
 2. **The existing changelog release headers**, if there are no tags. A repo can date its
    changelog sections without ever tagging — that is a complete scheme on its own.
-3. **Neither** — default to SemVer.
+3. **The version field in the project manifest**, if there is neither. A `version = "1.4.0"` is
+   a SemVer repo whatever else is missing.
+4. **Nothing at all** — ask the user. Never default silently.
 
 | Signal looks like | Scheme | Next version |
 | --- | --- | --- |
 | `v1.2.3`, `1.2.3` | SemVer | Bump per the version argument |
 | `2026-08-23` | Date-based, dashed | Today as `YYYY-MM-DD` |
 | `20260815` | Date-based, compact | Today as `YYYYMMDD` |
-| nothing | SemVer | Bump from the manifest version, or `0.1.0` if there is none |
+| manifest `version` only | SemVer | Bump from the manifest version |
+| nothing | **ask — see below** | Per the answer; first release is `0.1.0` or today's date |
+
+### No signal at all — ask, don't assume
+
+No tag, no `CHANGELOG.md`, and no `version` field in a manifest — the usual state of a fresh repo
+on its initial commit — means the project has not chosen a scheme yet, and neither should you.
+Ask with `AskUserQuestion`, **once, both questions in a single call**, before staging or writing
+anything:
+
+| Header | Question | Options |
+| --- | --- | --- |
+| `Changelog` | No CHANGELOG.md found. Create one? | *Yes, create it (Recommended)* — start a Keep a Changelog file · *No, skip it* — commit with no changelog |
+| `Versioning` | Which versioning scheme should this repo use? | *SemVer — vX.Y.Z (Recommended)* · *Date-based — YYYY-MM-DD* · *Date-based — YYYYMMDD* |
+
+- Ask only when **every** signal above is absent. A signal that answers is the repo telling you
+  what it already does — do not ask the user to confirm it.
+- Plain `/commit` with no version argument may not end up needing the scheme answer, since a
+  declined changelog leaves nothing that depends on it. Ask both anyway: one round trip beats two.
+- **If the changelog is declined**, skip every changelog step for this run, do not ask again for
+  the rest of the session, and say in the final report that no changelog was written and that
+  creating a `CHANGELOG.md` is what turns those entries back on.
+- The answer becomes the repo's signal for later runs — the changelog preamble records the scheme
+  in prose, and a tag records it in form — so later runs read it instead of asking again.
 
 Under either date-based scheme the version *is* today's date, so `patch`, `minor`, and `major`
 carry no meaning. Say so in the final report rather than silently ignoring the keyword, and
@@ -171,7 +242,9 @@ Match what the repo already does; with no tags, use `v` for SemVer and no prefix
 
 ## Changelog — Keep a Changelog 1.1.0
 
-The file is `CHANGELOG.md` at the repo root. If it does not exist, create it:
+The file is `CHANGELOG.md` at the repo root. If it is missing and the repo has no other version
+signal, ask first per "No signal at all" above and create it only on a yes. If it is missing but
+the repo does carry a signal — a tag, or a manifest version — create it without asking:
 
 ```markdown
 # Changelog
@@ -294,10 +367,15 @@ attribution check), plus:
 ## Steps
 
 1. Review the diff above. If it contains unrelated changes that would need different commit
-   types, stop and propose splitting them into separate commits before continuing.
-2. Stage the relevant files with `git add`. Never stage `.env`, secrets, or build artifacts.
-3. Decide type, scope, and whether the change is breaking. Update `CHANGELOG.md` per the rules
-   above (including the release-cut variant if a version argument is present), then stage it too.
+   types, stop and propose splitting them into separate commits before continuing. On an initial
+   commit there is no diff — read the listed files instead, and split nothing: the first commit
+   is allowed to contain everything.
+2. Stage the relevant files with `git add`. Never stage `.env`, secrets, or build artifacts. On
+   an initial commit, check the tree against the ignore rules first — see "Initial commit" above.
+3. Decide type, scope, and whether the change is breaking. If the repo has no version signal at
+   all, ask now per "No signal at all" above — before writing anything — and honour the answer.
+   Update `CHANGELOG.md` per the rules above (including the release-cut variant if a version
+   argument is present), then stage it too; skip it entirely if the user declined a changelog.
 4. Commit with a heredoc so the body and footers keep their newlines:
 
 ```bash
@@ -315,8 +393,9 @@ attribution check), plus:
 6. If a version argument was given, tag the commit now: `git tag "<tag>"`.
 7. Report the commit hash, the subject line, the changelog line you added, and (if applicable)
    the resolved version and the tag that was created. State how many commits the branch is now
-   ahead of its upstream (`git rev-list --count @{upstream}..HEAD`, or that there is no
-   upstream), and remind the user that nothing was pushed.
+   ahead of its upstream (`git rev-list --count @{upstream}..HEAD`, or that there is no upstream
+   — an initial commit never has one, so do not run that command there), and remind the user that
+   nothing was pushed. Say so too if a changelog was skipped because the user declined one.
 
 **Do not push.** No `git push` for the commit, and none for the tag. Never use `--force` or
 `--no-verify`. Extra context from the user: $ARGUMENTS

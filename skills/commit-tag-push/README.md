@@ -68,7 +68,29 @@ pending commits in its context before it starts and reports the total it pushed.
 
 Same detection as [`commit`](../commit/): manifest from `Cargo.toml` / `package.json` /
 `pyproject.toml` / none, and the versioning scheme from the latest tag — falling back to the
-changelog's existing release headers when the repo has no tags, then to SemVer.
+changelog's existing release headers when the repo has no tags, then to the manifest's `version`
+field.
+
+With **no signal anywhere** — no tag, no changelog, no manifest version — it asks instead of
+assuming: whether to create a `CHANGELOG.md`, and which scheme to use (SemVer `vX.Y.Z`,
+`YYYY-MM-DD`, or `YYYYMMDD`), both in one prompt, before it stages or writes anything. This
+skill always tags, so it always needs the scheme answer.
+
+## Initial commit
+
+Works in a repo with no commits: no `HEAD`-based command is run against an unborn branch, the
+diff is replaced by a listing of the files that would go in, and the push becomes
+`git push -u origin <branch>`.
+
+Because the whole point is pushing, the remote is checked **first**. A fresh repo with no remote
+stops the run before anything is staged — with a suggestion to add one, or to use
+[`commit`](../commit/) for a local commit and tag — rather than committing and failing at the
+push.
+
+Bump keywords and auto-detection have nothing to work from on a first release: the version
+resolves to the manifest's version if there is one, `0.1.0` otherwise, or today's date under a
+date-based scheme. An explicit `X.Y.Z` still applies exactly, and the report says when a
+directive was ignored.
 
 ## Adapting it
 

@@ -37,7 +37,9 @@ git push --follow-tags
 ## What it does
 
 1. Reads branch, status, diff, latest tag, project manifest, and the top of the changelog
-   into context before deciding anything.
+   into context before deciding anything. In a repo with no commits yet there is no `HEAD` to
+   diff against, so it lists the files that would go into the initial commit instead — nothing
+   here runs `git diff HEAD`, `git log`, or `git describe` blindly.
 2. Refuses up front if the target version already exists — before staging or writing a thing.
 3. Stages the relevant files, never `.env`, secrets, or build artifacts.
 4. Picks a type and scope from the actual diff, and stops to propose a split if the diff
@@ -82,10 +84,28 @@ then none.
 The versioning scheme is detected from the latest tag — `v1.2.3` for SemVer, `2026-08-23` or
 `20260815` for date-based. With no tags, it falls back to the shape of the existing changelog
 release headers, which is what makes a repo that dates its changelog but never tags work
-correctly. With neither signal, SemVer.
+correctly. With neither, it reads the manifest's `version` field as a SemVer signal.
+
+With **no signal anywhere** — no tag, no changelog, no manifest version, the usual state of a
+fresh repo — it stops and asks rather than assuming: whether to create a `CHANGELOG.md`, and
+which scheme to use (SemVer `vX.Y.Z`, `YYYY-MM-DD`, or `YYYYMMDD`). Both questions come in one
+prompt. Declining the changelog is remembered for the rest of the session; the answer itself
+gets recorded in the changelog preamble and the tag, so later runs read it instead of asking.
 
 Under a date-based scheme `patch`/`minor`/`major` have no meaning and today's date is used
 instead; the skill reports that rather than pretending the keyword did something.
+
+## Initial commit
+
+Works in a repo with no commits. The skill notices the unborn branch, substitutes a file listing
+for the impossible diff, keeps `HEAD`-based commands out of the way, picks `feat:` for a project
+import or `chore: initial commit` for bare scaffolding, and reports "no upstream" instead of
+counting commits against one. It also checks what it is about to stage: with no `.gitignore` and
+a `node_modules/` or `target/` sitting in the tree, it stops and offers to write one first.
+
+`as patch|minor|major` has nothing to increment on a first release, so it resolves to the
+manifest's version if there is one and `0.1.0` otherwise, and the report says the keyword was
+ignored. `as X.Y.Z` still applies exactly.
 
 ## Adapting it
 

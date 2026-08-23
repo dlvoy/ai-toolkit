@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   tags, so a project that dates its changelog and never tags is handled correctly.
 - Pointer to the external `unslop` skill, for stripping the tells that make agent output
   read as machine-written.
+- A prompt for the versioning scheme, and for whether to create a `CHANGELOG.md`, shown when
+  a repo has no tag, changelog, or manifest version to infer either from. Both skills used to
+  assume SemVer and create the file uninvited.
 
 ### Changed
 
@@ -25,3 +28,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
   the changes that matter, with trivial work left out.
 - Date-based changelogs no longer use an `Unreleased` section. Entries go straight into the
   section for today's date, and several commits on the same day accumulate into one section.
+- Scheme detection now reads a manifest's `version` field as a SemVer signal, so a
+  `package.json` or `Cargo.toml` is enough to identify the scheme without a tag or changelog.
+
+### Fixed
+
+- Both skills failing outright in a repo with no commits yet. Every command that reads `HEAD`
+  is now guarded, and the initial commit gets a listing of the files it would contain in place
+  of a diff that cannot be produced.
+- `commit-tag-push` writing a commit and a tag before discovering the repo has no remote to
+  push them to. It checks for one before staging anything.
