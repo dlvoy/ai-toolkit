@@ -25,8 +25,9 @@ Everything here is MIT licensed — see [LICENSE](LICENSE) — but read
 | --- | --- |
 | [`commit`](skills/commit/) | Conventional Commit + Keep a Changelog entry, committed locally and never pushed. Optionally cuts a release with `as patch\|minor\|major\|X.Y.Z`. |
 | [`commit-tag-push`](skills/commit-tag-push/) | The release verb: bumps the version, folds `[Unreleased]` into a release section, tags, and pushes the tag with every commit waiting on the branch. |
+| [`spec-init`](skills/spec-init/) | Sets a project up for spec-driven design: `docs/specs` with one intent folder per feature, wired into `CLAUDE.md`. Asks whether to do it when a new project is created. |
 
-Both detect the project type (Cargo / npm / pyproject / none) and the versioning scheme
+The two git skills detect the project type (Cargo / npm / pyproject / none) and the versioning scheme
 (SemVer, or date-based as `YYYY-MM-DD` or `YYYYMMDD`) instead of assuming one, and both
 refuse to put AI attribution in your commit messages. Only `commit-tag-push` touches the
 remote.

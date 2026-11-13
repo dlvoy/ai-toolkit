@@ -1,10 +1,11 @@
 # Skills
 
-Agent Skills for git hygiene: Conventional Commits in, Keep a Changelog out, and neither AI
-attribution nor private local detail anywhere in the history.
+Agent Skills for git hygiene (Conventional Commits in, Keep a Changelog out, and neither AI
+attribution nor private local detail anywhere in the history) and for spec-driven design.
 
 | Skill | Use it when |
 | --- | --- |
+| [`spec-init`](spec-init/) | Starting a project, or adopting specs in one. Creates `docs/specs` (one intent folder per feature with `intent.md`, `plan.md`, `status.md`) and a Specs section in `CLAUDE.md`. Offers itself when a new project is created. |
 | [`commit`](commit/) | Everyday commits. Writes the commit and a `[Unreleased]` changelog entry. Cuts a release too, if you ask with `as patch\|minor\|major\|X.Y.Z`. **Never pushes.** |
 | [`commit-tag-push`](commit-tag-push/) | You are shipping. Always bumps the version, folds `[Unreleased]` into a release section, tags, and pushes the tag along with every commit waiting on the branch — and can work out the bump size from the commit types since the last tag. |
 

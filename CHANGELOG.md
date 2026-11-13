@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## 2026-11-13
+
+### Added
+
+- `spec-init` skill, which sets a project up for spec-driven design: a `docs/specs` folder
+  with one numbered intent folder per feature (`intent.md`, `plan.md`, `status.md`), and a
+  Specs section in `CLAUDE.md` so later sessions plan through it. It offers itself when a new
+  project is created, and leaves existing specs and `CLAUDE.md` sections untouched.
+
 ## 2026-08-23
 
 ### Added
