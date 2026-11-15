@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## 2026-11-15
+
+### Added
+
+- `figcraft` skill for design systems and UI design in FigCraft through its headless CLI or MCP
+  server: which interface to use, how scripts behave, the commands that matter, a workflow for
+  keeping tokens, components and screens (light and dark) in step with the code, known quirks,
+  and a small Python runner.
+- `vectorcraft` skill for SVG work in VectorCraft: converting and rasterising, edit-then-export
+  runs, and recipes for favicon sets, apple and PWA icons and Android launcher icons.
+
 ## 2026-11-13
 
 ### Added

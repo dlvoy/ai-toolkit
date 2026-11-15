@@ -25,6 +25,8 @@ Everything here is MIT licensed — see [LICENSE](LICENSE) — but read
 | --- | --- |
 | [`commit`](skills/commit/) | Conventional Commit + Keep a Changelog entry, committed locally and never pushed. Optionally cuts a release with `as patch\|minor\|major\|X.Y.Z`. |
 | [`commit-tag-push`](skills/commit-tag-push/) | The release verb: bumps the version, folds `[Unreleased]` into a release section, tags, and pushes the tag with every commit waiting on the branch. |
+| [`figcraft`](skills/figcraft/) | Design systems in FigCraft without its window: tokens, components, screens in light and dark, previews, kept in step with the code. |
+| [`vectorcraft`](skills/vectorcraft/) | SVG images in VectorCraft without its window: logos, icons, and the PNG, ICO and app-icon rasters made from them. |
 | [`spec-init`](skills/spec-init/) | Sets a project up for spec-driven design: `docs/specs` with one intent folder per feature, wired into `CLAUDE.md`. Asks whether to do it when a new project is created. |
 
 The two git skills detect the project type (Cargo / npm / pyproject / none) and the versioning scheme
